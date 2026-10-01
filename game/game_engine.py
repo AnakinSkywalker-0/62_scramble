@@ -17,6 +17,10 @@ class GameEngine:
         self.revealed_positions = set()
         self.timer_remaining = self.ROUND_TIME
         self.timeout_pending = False
+        self.tile_letters = list(self.scrambled_word)
+        self.selected_tile = None
+        self.tile_letters = []
+        self.selected_tile = None
         self.feedback_msg = "Unscramble the letters above!"
         self.feedback_color = (210, 215, 225)
 
@@ -58,6 +62,28 @@ class GameEngine:
         self.feedback_msg = "All letters have already been revealed!"
         self.feedback_color = (240, 170, 50)
 
+    def get_tile_rects(self):
+        tile_size = 48
+        gap = 8
+        total_width = len(self.tile_letters) * tile_size + (len(self.tile_letters) - 1) * gap
+        start_x = self.width // 2 - total_width // 2
+        y = 135
+        return [pygame.Rect(start_x + i * (tile_size + gap), y, tile_size, tile_size) for i in range(len(self.tile_letters))]
+
+    def handle_tile_click(self, pos):
+        rects = self.get_tile_rects()
+        for i, rect in enumerate(rects):
+            if rect.collidepoint(pos):
+                if self.selected_tile is None:
+                    self.selected_tile = i
+                elif self.selected_tile == i:
+                    self.selected_tile = None
+                else:
+                    self.tile_letters[self.selected_tile], self.tile_letters[i] = self.tile_letters[i], self.tile_letters[self.selected_tile]
+                    self.selected_tile = None
+                    self.input_box.text = ''.join(self.tile_letters)
+                return
+
     def submit_guess(self):
         guess = self.input_box.text.strip().upper()
         if not guess:
@@ -96,6 +122,10 @@ class GameEngine:
                 self.submit_guess()
             elif self.hint_btn.collidepoint(event.pos):
                 self.use_hint()
+            else:
+                self.handle_tile_click(event.pos)
+            elif self.hint_btn.collidepoint(event.pos):
+                self.use_hint()
 
     def update(self):
         if self.timeout_pending:
@@ -118,9 +148,12 @@ class GameEngine:
         score_surf = self.font_msg.render(f"Score: {self.score}", True, (255, 220, 80))
         screen.blit(score_surf, (self.width // 2 - score_surf.get_width() // 2, 70))
 
-        spaced_letters = "  ".join(self.scrambled_word)
-        scramble_surf = self.font_word.render(spaced_letters, True, (100, 200, 255))
-        screen.blit(scramble_surf, (self.width // 2 - scramble_surf.get_width() // 2, 130))
+        for i, (letter, rect) in enumerate(zip(self.tile_letters, self.get_tile_rects())):
+            tile_color = (70, 110, 170) if i != self.selected_tile else (220, 150, 50)
+            pygame.draw.rect(screen, tile_color, rect, border_radius=6)
+            pygame.draw.rect(screen, (220, 220, 220), rect, width=2, border_radius=6)
+            letter_surf = self.font_word.render(letter, True, (255, 255, 255))
+            screen.blit(letter_surf, (rect.centerx - letter_surf.get_width() // 2, rect.centery - letter_surf.get_height() // 2))
 
         self.input_box.render(screen)
 
