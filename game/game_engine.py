@@ -47,7 +47,7 @@ class GameEngine:
 
         # BUG SYMPTON: 
         # Player's guess is validated against the scrambled text instead of the original solution.
-        is_correct = (guess == self.scrambled_word)
+        is_correct = (guess == self.secret_word)
 
         if is_correct:
             self.score += 1
