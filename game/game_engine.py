@@ -15,6 +15,8 @@ class GameEngine:
 
         self.score = 0
         self.revealed_positions = set()
+        self.timer_remaining = self.ROUND_TIME
+        self.timeout_pending = False
         self.feedback_msg = "Unscramble the letters above!"
         self.feedback_color = (210, 215, 225)
 
@@ -42,6 +44,8 @@ class GameEngine:
         self.scrambled_word = self.scramble_string(self.secret_word)
         self.input_box.clear()
         self.revealed_positions.clear()
+        self.timer_remaining = self.ROUND_TIME
+        self.timeout_pending = False
 
     def use_hint(self):
         for position, letter in enumerate(self.secret_word):
@@ -76,6 +80,13 @@ class GameEngine:
             self.input_box.clear()
 
     def handle_event(self, event):
+        if event.type == pygame.USEREVENT + 1 and self.timeout_pending:
+            self.next_round()
+            return
+
+        if self.timeout_pending:
+            return
+
         self.input_box.handle_event(event)
 
         if event.type == pygame.KEYDOWN and event.key == pygame.K_RETURN:
@@ -87,7 +98,16 @@ class GameEngine:
                 self.use_hint()
 
     def update(self):
-        pass
+        if self.timeout_pending:
+            return
+
+        self.timer_remaining -= 1 / 60
+        if self.timer_remaining <= 0:
+            self.timer_remaining = 0
+            self.feedback_msg = f"TIME'S UP! The word was {self.secret_word}."
+            self.feedback_color = (240, 170, 50)
+            self.timeout_pending = True
+            pygame.time.set_timer(pygame.USEREVENT + 1, 1200, loops=1)
 
     def render(self, screen):
         screen.fill((26, 30, 38))
@@ -113,6 +133,9 @@ class GameEngine:
         pygame.draw.rect(screen, (220, 220, 220), self.hint_btn, width=2, border_radius=6)
         hint_text = self.font_btn.render("HINT (-1)", True, (255, 255, 255))
         screen.blit(hint_text, (self.hint_btn.centerx - hint_text.get_width() // 2, self.hint_btn.centery - hint_text.get_height() // 2))
+
+        timer_text = self.font_msg.render(f"Time: {max(0, int(self.timer_remaining))}s", True, (255, 220, 80))
+        screen.blit(timer_text, (self.width // 2 - timer_text.get_width() // 2, 105))
 
         feedback_surf = self.font_msg.render(self.feedback_msg, True, self.feedback_color)
         screen.blit(feedback_surf, (self.width // 2 - feedback_surf.get_width() // 2, 285))
