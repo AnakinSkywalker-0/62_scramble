@@ -15,6 +15,7 @@ class GameEngine:
 
         self.score = 0
         self.revealed_positions = set()
+        self.hint_letters = {}
         self.timer_remaining = self.ROUND_TIME
         self.timeout_pending = False
         self.tile_letters = list(self.scrambled_word)
@@ -48,6 +49,7 @@ class GameEngine:
         self.scrambled_word = self.scramble_string(self.secret_word)
         self.input_box.clear()
         self.revealed_positions.clear()
+        self.hint_letters = {}
         self.timer_remaining = self.ROUND_TIME
         self.timeout_pending = False
 
@@ -154,6 +156,21 @@ class GameEngine:
             pygame.draw.rect(screen, (220, 220, 220), rect, width=2, border_radius=6)
             letter_surf = self.font_word.render(letter, True, (255, 255, 255))
             screen.blit(letter_surf, (rect.centerx - letter_surf.get_width() // 2, rect.centery - letter_surf.get_height() // 2))
+
+        hint_y = 195
+        hint_parts = []
+        for i in range(len(self.secret_word)):
+            hint_parts.append(self.hint_letters.get(i, '_'))
+        hint_text = ' '.join(hint_parts)
+        hint_surf = self.font_msg.render(hint_text, True, (245, 245, 245))
+        screen.blit(hint_surf, (self.width // 2 - hint_surf.get_width() // 2, hint_y))
+
+        timer_ratio = max(0, self.timer_remaining / self.ROUND_TIME)
+        timer_x, timer_y, timer_w, timer_h = self.width // 2 - 150, 105, 300, 16
+        pygame.draw.rect(screen, (55, 60, 70), (timer_x, timer_y, timer_w, timer_h), border_radius=8)
+        pygame.draw.rect(screen, (90, 200, 120), (timer_x, timer_y, int(timer_w * timer_ratio), timer_h), border_radius=8)
+        timer_label = self.font_msg.render(f"Time: {max(0, int(self.timer_remaining))}s", True, (255, 220, 80))
+        screen.blit(timer_label, (self.width // 2 - timer_label.get_width() // 2, 82))
 
         self.input_box.render(screen)
 
